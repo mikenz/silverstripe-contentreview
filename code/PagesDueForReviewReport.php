@@ -43,8 +43,9 @@ class PagesDueForReviewReport extends SS_Report {
 			Subsite::changeSubsite($existingSubsite);
 		} else {
 			$cmsUsers = Permission::get_members_by_permission(array("CMS_ACCESS_CMSMain", "ADMIN"));
-			$map = $cmsUsers->map('ID', 'Title', '(no owner)');
+			$map = $cmsUsers->map('ID', 'getName', '(no owner)');
 			unset($map['']);
+			asort($map);
 			$map = array('' => 'Any', '-1' => '(no owner)') + $map;
 			$params->push(new DropdownField("OwnerID", 'Page owner', $map));
 		}
@@ -117,15 +118,22 @@ class PagesDueForReviewReport extends SS_Report {
 		// Owner dropdown
 		if(!empty($params[$ownerIdParam])) {
 			$ownerID = (int)$params[$ownerIdParam];
+			$ownerWhere = '';
 			// We use -1 here to distinguish between No Owner and Any
-			if($ownerID == -1) $ownerID = 0;
-			$wheres[] = 'OwnerID = ' . $ownerID;
+			if($ownerID == -1) {
+				$wheres[] = '"SiteTree_Owners"."MemberID" IS NULL';
+			} else {
+				$wheres[] = '"SiteTree_Owners"."MemberID" = ' . $ownerID;
+			}
 		}
 		
 		$query = singleton("SiteTree")->extendedSQL(join(' AND ', $wheres));
 		
-		$query->select[] = Member::get_title_sql('Owner').' AS OwnerNames';
-		$query->from[] = 'LEFT JOIN "Member" AS "Owner" ON "SiteTree"."OwnerID" = "Owner"."ID"';
+//		$query->select[] = Member::get_title_sql('Owner').' AS OwnerNames';
+		if(!empty($params[$ownerIdParam])) {
+			$query->from[] = 'LEFT JOIN "SiteTree_Owners" ON "SiteTree_Owners"."SiteTreeID" = "SiteTree"."ID"';
+			$query->from[] = 'LEFT JOIN "Member" AS "Owner" ON "Owner"."ID" = "SiteTree_Owners"."MemberID"';
+		}
 		
 		// Turn a query into records
 		if($sort) {
@@ -145,10 +153,16 @@ class PagesDueForReviewReport extends SS_Report {
 		}
 
 		$records = singleton('SiteTree')->buildDataObjectSet($query->execute(), 'DataObjectSet', $query);
-		// var_dump($records);
+//		 var_dump($records);
 		if($records) {
 			foreach($records as $record) {
-				$record->LastEditedByName = $record->LastEditedBy() ? $record->LastEditedBy()->Title : null;
+				$record->LastEditedByName = $record->LastEditedBy() ? $record->LastEditedBy()->getName() : null;
+				$ownerstr = array();
+				foreach($record->Owners() as $owner) {
+					$ownerstr[] = $owner->getName();
+				}
+				$ownerstr = implode(', ', $ownerstr);
+				$record->OwnerNames = $ownerstr;
 			}
 		
 			if($sort && $field != "LastEditedByName") $records->sort($sort);

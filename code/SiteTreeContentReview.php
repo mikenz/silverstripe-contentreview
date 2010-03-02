@@ -14,25 +14,22 @@ class SiteTreeContentReview extends DataObjectDecorator implements PermissionPro
 				"NextReviewDate" => "Date",
 				'ReviewNotes' => 'Text'
 			),
-			'has_one' => array(
-				'Owner' => 'Member'
+			'many_many' => array(
+				'Owners' => 'Member'
 			),
 		);
-	}
-	
-	function getOwnerName() {
-		if($this->owner->OwnerID && $this->owner->Owner()) return $this->owner->Owner()->FirstName . ' ' . $this->owner->Owner()->Surname;
 	}
 	
 	public function updateCMSFields(&$fields) {
 		if(Permission::check("EDIT_CONTENT_REVIEW_FIELDS")) {
 			
 			$cmsUsers = Permission::get_members_by_permission(array("CMS_ACCESS_CMSMain", "ADMIN"));
-			
+
+			$owners = new CheckboxSetField('Owners', 'Content review owners', $cmsUsers->toDropdownMap());
+
 			$fields->addFieldsToTab("Root.Review", array(
 				new HeaderField(_t('SiteTreeCMSWorkflow.REVIEWHEADER', "Content review"), 2),
-				new DropdownField("OwnerID", _t("SiteTreeCMSWorkflow.PAGEOWNER", 
-					"Page owner (will be responsible for reviews)"), $cmsUsers->map('ID', 'Title', '(no owner)')),
+				$owners,
 				new CalendarDateField("NextReviewDate", _t("SiteTreeCMSWorkflow.NEXTREVIEWDATE",
 					"Next review date (leave blank for no review)")),
 				new DropdownField("ReviewPeriodDays", _t("SiteTreeCMSWorkflow.REVIEWFREQUENCY", 
@@ -50,6 +47,10 @@ class SiteTreeContentReview extends DataObjectDecorator implements PermissionPro
 				)),
 				new TextareaField('ReviewNotes', 'Review Notes')
 			));
+			// Some custom CSS to make the owners list look better.
+			Requirements::customCSS('#Form_EditForm_Owners { max-height: 12em; padding-left: 0.5em; overflow: auto; background: #FFF; }');
+			Requirements::customCSS('#Form_EditForm_Owners li.odd { background: #F8F8F8; }');
+			Requirements::customCSS('#Form_EditForm_Owners li { margin: 0 !important; padding: 4px 0; }');
 		}
 	}
 	

@@ -79,24 +79,33 @@ class ContentReviewTest extends FunctionalTest {
 		
 		SS_Datetime::clear_mock_now();
 	}
-	
-	function testOwnerName() {
+
+	function testOwners() {
 		$editor = $this->objFromFixture('Member', 'editor');
 		$this->logInAs($editor);
 		
 		$page = new Page();		
 		$page->ReviewPeriodDays = 10;
-		$page->OwnerID = $editor->ID;
-		$page->write();
+		$page->Title = 'Test_write';
+		$page->Owners()->removeAll();
+		$page->Owners()->add($editor);
+		$page->Owners()->write();
+		$id = $page->write();
 
 		$this->assertTrue($page->doPublish());
-		$this->assertEquals($page->OwnerName, "Test Editor");
+		// For some reason this iteration approach works, but simply calling
+		// $page->Owners()->First() does not.
+		foreach($page->Owners() as $o) {
+			$this->assertNotNull($o);
+			$this->assertEquals($o->getName(), "Test Editor");
+			break;
+		}
 		
 		$page = $this->objFromFixture('Page', 'about');
-		$page->OwnerID = 0;
+		$page->Owners()->removeAll();
 		$page->write();
 		
 		$this->assertTrue($page->doPublish());
-		$this->assertNull($page->OwnerName);
+		$this->assertNull($page->Owners()->First());
 	}
 }
