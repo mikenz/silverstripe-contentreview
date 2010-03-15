@@ -9,7 +9,7 @@
 					<td scope="row" colspan="2" class="typography">
 						<h2><% _t('ContentReviewEmails.EMAIL_HEADING','Page due for review') %></h2>
 						
-						<p>The page $Page.Title is due for review today by you</p>
+						<p>The page $Page.Title <% if Subsite %>in the subsite &quot;$Subsite.Title&quot;<% end_if %> is due for review today by you</p>
 						
 						<h2>Actions</h2>
 						<ul>

@@ -30,13 +30,18 @@ class ContentReviewEmails extends DailyTask {
 					$email->setFrom(($sender->Email) ? $sender->Email : Email::getAdminEmail());
 					$email->setTemplate('ContentReviewEmails');
 					$email->setSubject($subject);
+					$subsite = null;
+					if (Object::has_extension('SiteTree', 'SiteTreeSubsites')) {
+						$subsite = $page->Subsite();
+					}
 					$email->populateTemplate(array(
 						"PageCMSLink" => BASE_URL . "/admin/show/".$page->ID,
 						"Recipient" => $recipient,
 						"Sender" => $sender,
 						"Page" => $page,
-						"StageSiteLink"	=> $page->Link()."?stage=stage",
-						"LiveSiteLink"	=> $page->Link()."?stage=live",
+						"Subsite" => $subsite,
+						"StageSiteLink"	=> $page->AbsoluteLink()."?stage=stage",
+						"LiveSiteLink"	=> $page->AbsoluteLink()."?stage=live",
 					));
 
 					$email->send();
