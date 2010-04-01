@@ -6,22 +6,29 @@ class ContentReviewTest extends FunctionalTest {
 	function testPermissions() {
 		$editor = $this->objFromFixture('Member', 'editor');
 		$author = $this->objFromFixture('Member', 'author');
+		$viewer = $this->objFromFixture('Member', 'viewer');
 		
 		// Assert the permission code exists
 		$perms = singleton('SiteTreeContentReview')->providePermissions();
-		$this->assertTrue(isset($perms['EDIT_CONTENT_REVIEW_FIELDS']));
-		
+		$this->assertTrue(isset($perms['EDIT_CONTENT_REVIEW_FIELDS']), "EDIT_CONTENT_REVIEW_FIELDS was not found in provided permissions.");
+
 		// Check a user with permission can edit fields
 		$this->logInAs($editor);
 		$page = new Page();
 		$fields = $page->getCMSFields();
-		$this->assertNotNull($fields->fieldByName('Root.Review'));
-		
-		// Check a user without permission can see tab
+		$this->assertNotNull($fields->fieldByName('Root.Review'), "Failed to find Root.Review Tab.");
+
+		// Check a user with permission can edit fields, even if not workflow admin
 		$this->logInAs($author);
 		$page = new Page();
 		$fields = $page->getCMSFields();
-		$this->assertNull($fields->fieldByName('Root.Review'));
+		$this->assertNotNull($fields->fieldByName('Root.Review'), "Failed to find Root.Review Tab.");
+		
+		// Check a user without permission can see tab
+		$this->logInAs($viewer);
+		$page = new Page();
+		$fields = $page->getCMSFields();
+		$this->assertNull($fields->fieldByName('Root.Review'), "Found Root.Review tab when I shouldn't have.");
 	}
 	
 	function testContentReviewEmails() {
@@ -36,14 +43,15 @@ class ContentReviewTest extends FunctionalTest {
 	}
 	
 	function testAutomaticallySettingReviewDate() {
+		SiteTreeContentReview::set_update_on_write(true);
 		$editor = $this->objFromFixture('Member', 'editor');
 		$this->logInAs($editor);
 		
 		$page = new Page();
 		$page->ReviewPeriodDays = 10;
 		$page->write();
-		$this->assertTrue($page->doPublish());		
-		$this->assertEquals(date('Y-m-d', strtotime('now + 10 days')), $page->NextReviewDate);
+		$this->assertTrue($page->doPublish(), "Failed to publish page");
+		$this->assertEquals(date('Y-m-d', strtotime('now + 10 days')), $page->NextReviewDate, "Review date should be 10 days in the future.");
 	}
 	
 	function testReportContent() {
@@ -92,7 +100,7 @@ class ContentReviewTest extends FunctionalTest {
 		$page->Owners()->write();
 		$id = $page->write();
 
-		$this->assertTrue($page->doPublish());
+		$this->assertTrue($page->doPublish(), "Failed to publish page");
 		// For some reason this iteration approach works, but simply calling
 		// $page->Owners()->First() does not.
 		foreach($page->Owners() as $o) {
@@ -107,5 +115,24 @@ class ContentReviewTest extends FunctionalTest {
 		
 		$this->assertTrue($page->doPublish());
 		$this->assertNull($page->Owners()->First());
+	}
+
+	function testGetCMSFields() {
+		$page = new Page();
+
+		$editor = $this->objFromFixture('Member', 'editor');
+		$this->logInAs($editor);
+		$fields = $page->getCMSFields();
+		$this->assertNotNull($fields->dataFieldByName('NextReviewDate'), "Didn't find expected NextReviewDate field");
+
+		$editor = $this->objFromFixture('Member', 'viewer');
+		$this->logInAs($editor);
+		$fields = $page->getCMSFields();
+		$this->assertNull($fields->dataFieldByName('NextReviewDate'), "Found unexpected NextReviewDate field");
+
+		$editor = $this->objFromFixture('Member', 'admin');
+		$this->logInAs($editor);
+		$fields = $page->getCMSFields();
+		$this->assertNotNull($fields->dataFieldByName('NextReviewDate'), "Didn't find expected NextReviewDate field");
 	}
 }

@@ -1,6 +1,7 @@
 <?php
 
 Object::add_extension('SiteTree', 'SiteTreeContentReview');
+Object::add_extension('CMSMain', 'LeftAndMainContentReview');
 
 
 if(class_exists('Subsite') && class_exists('SubsiteReportWrapper')){

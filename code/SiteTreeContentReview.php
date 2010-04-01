@@ -6,6 +6,26 @@
  * @package contentreview
  */
 class SiteTreeContentReview extends DataObjectDecorator implements PermissionProvider {
+
+	/**
+	 * If this is true, then review dates will be updated when the page is saved.
+	 * @var bool
+	 */
+	protected static $update_on_write = false;
+
+
+	/**
+	 * If $set is true, then review dates will be updated when the page is saved.
+	 * @param bool $set
+	 */
+	public static function set_update_on_write($set = true) {
+		self::$update_on_write = $set;
+	}
+
+	public static function get_update_on_write() {
+		return self::$update_on_write;
+	}
+
 	
 	function extraStatics() {
 		return array(
@@ -22,8 +42,8 @@ class SiteTreeContentReview extends DataObjectDecorator implements PermissionPro
 	
 	public function updateCMSFields(&$fields) {
 		if(Permission::check("EDIT_CONTENT_REVIEW_FIELDS")) {
-			
-			$cmsUsers = Permission::get_members_by_permission(array("CMS_ACCESS_CMSMain", "ADMIN"));
+
+			$cmsUsers = Permission::get_members_by_permission(array("EDIT_CONTENT_REVIEW_FIELDS", "CMS_ACCESS_CMSMain", "ADMIN"));
 
 			$owners = new CheckboxSetField('Owners', 'Content review owners', $cmsUsers->toDropdownMap());
 
@@ -32,7 +52,7 @@ class SiteTreeContentReview extends DataObjectDecorator implements PermissionPro
 				$owners,
 				new CalendarDateField("NextReviewDate", _t("SiteTreeCMSWorkflow.NEXTREVIEWDATE",
 					"Next review date (leave blank for no review)")),
-				new DropdownField("ReviewPeriodDays", _t("SiteTreeCMSWorkflow.REVIEWFREQUENCY", 
+				new DropdownField("ReviewPeriodDays", _t("SiteTreeCMSWorkflow.REVIEWFREQUENCY",
 					"Review frequency (the review date will be set to this far in the future whenever the page is published.)"), array(
 					0 => "No automatic review date",
 					1 => "1 day",
@@ -53,13 +73,22 @@ class SiteTreeContentReview extends DataObjectDecorator implements PermissionPro
 			Requirements::customCSS('#Form_EditForm_Owners li { margin: 0 !important; padding: 4px 0; }');
 		}
 	}
-	
-	function onBeforeWrite() {
-		if($this->owner->ReviewPeriodDays && !$this->owner->NextReviewDate) {
+
+	/**
+	 * Update the NextReviewDate by adding ReviewPeriodDays to the current date.
+	 */
+	public function updateReviewDate() {
+		if($this->owner->ReviewPeriodDays) {
 			$this->owner->NextReviewDate = date('Y-m-d', strtotime('+' . $this->owner->ReviewPeriodDays . ' days'));
 		}
 	}
-	
+
+	public function onBeforeWrite() {
+		if(self::$update_on_write && !$this->owner->NextReviewDate) {
+			$this->updateReviewDate();
+		}
+	}
+		
 	function providePermissions() {
 		return array(
 			"EDIT_CONTENT_REVIEW_FIELDS" => array(
@@ -68,5 +97,12 @@ class SiteTreeContentReview extends DataObjectDecorator implements PermissionPro
 				'sort' => 50
 			)
 		);
+	}
+
+	function LastEditedBy() {
+		$latestVersion = Versioned::get_latest_version('SiteTree', $this->owner->ID);
+		if (!$latestVersion || !$latestVersion->AuthorID) return;
+		
+		return DataObject::get_by_id('Member', $latestVersion->AuthorID);
 	}
 }

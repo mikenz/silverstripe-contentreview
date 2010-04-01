@@ -3,24 +3,37 @@ Permission:
         Code: CMS_ACCESS_CMSMain
     cmsmain2:
         Code: CMS_ACCESS_CMSMain
-    setreviewdates:
+    cmsmain3:
+        Code: CMS_ACCESS_CMSMain
+    admin:
+        Code: ADMIN
+    setreviewdates1:
+        Code: EDIT_CONTENT_REVIEW_FIELDS
+    setreviewdates2:
+        Code: EDIT_CONTENT_REVIEW_FIELDS
+    setreviewdates3:
         Code: EDIT_CONTENT_REVIEW_FIELDS
     workflowadmin1:
-        Code: IS_WORKFLOW_ADMIN
-    workflowadmin2:
         Code: IS_WORKFLOW_ADMIN
 
 Group:
     editorgroup:
         Title: Edit existing pages
         Code: editorgroup
-        Permissions: =>Permission.cmsmain1,=>Permission.workflowadmin1,=>Permission.setreviewdates
+        Permissions: =>Permission.cmsmain1,=>Permission.workflowadmin1,=>Permission.setreviewdates1
     authorgroup:
         Title: Author existing pages
         Code: authorgroup
-        Permissions: =>Permission.cmsmain2,=>Permission.workflowadmin2
+        Permissions: =>Permission.cmsmain2,=>Permission.setreviewdates2
+    viewergroup:
+        Title: View pages
+        Code: viewergroup
+        Permissions: =>Permission.cmsmain3
+    admingroup:
+        Title: Full admin permissions
+        Code: admingroup
+        Permissions: =>Permission.admin
 
-    
 Member:
     author:
         FirstName: Test
@@ -31,11 +44,21 @@ Member:
         FirstName: Test
         Surname: Editor
         Groups: =>Group.editorgroup
-    
+    viewer:
+        FirstName: Test
+        Surname: Viewer
+        Groups: =>Group.viewergroup
+    admin:
+        FirstName: administrator
+        Surname: account
+        Groups: =>Group.admingroup
+        
 Page:
     home:
         Title: Home
         NextReviewDate: 2010-02-01
+        EditorGroups: =>Group.editorgroup,=>Group.authorgroup
+        ViewerGroups: =>Group.editorgroup,=>Group.authorgroup
     about:
         Title: About Us
         NextReviewDate: 2010-02-07
