@@ -67,6 +67,8 @@ class ContentReviewTest extends FunctionalTest {
 			'ReviewDateAfter' => '01/01/2010',
 			'ReviewDateBefore' => '12/12/2010'
 		), 'NextReviewDate ASC', false);
+
+		$this->assertNotNull($results, "No results were retrieved from PagesDueForReviewReport");
 		
 		$this->assertEquals($results->column('Title'), array(
 			'Home',
@@ -79,6 +81,8 @@ class ContentReviewTest extends FunctionalTest {
 		
 		$results = $report->sourceRecords(array(
 		), 'NextReviewDate ASC', false);
+
+		$this->assertNotNull($results, "No results were retrieved from PagesDueForReviewReport");
 		
 		$this->assertEquals($results->column('Title'), array(
 			'Home',

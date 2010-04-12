@@ -87,22 +87,26 @@ class PagesDueForReviewReport extends SS_Report {
 		$wheres = array();
 		
 		
+		$db = DB::getConn();
 		if(empty($params['ReviewDateBefore']) && empty($params['ReviewDateAfter'])) {
 			// If there's no review dates set, default to all pages due for review now
-			$wheres[] = 'NextReviewDate < \'' . (class_exists('SS_Datetime') ? SS_Datetime::now()->URLDate() : SSDatetime::now()->URLDate()) . '\' + INTERVAL 1 DAY';
+			$now = class_exists('SS_Datetime')
+				? SS_Datetime::now()->Rfc2822()
+				: SSDatetime::now()->Rfc2822();
+			$wheres[] = $db->datetimeDifferenceClause('NextReviewDate', $now) . ' < 0';
 		} else {
 			// Review date before
 			if(!empty($params['ReviewDateBefore'])) {
 				list($day, $month, $year) = explode('/', $params['ReviewDateBefore']);
-				$reviewDate = "$year-$month-$day";
-				$wheres[] = 'NextReviewDate < \'' . Convert::raw2sql($reviewDate) . '\' + INTERVAL 1 DAY';
+				$reviewDate = "$year-$month-$day 00:00:00";
+				$wheres[] = $db->datetimeDifferenceClause('NextReviewDate', $db->datetimeIntervalClause(Convert::raw2sql($reviewDate), '1 DAY')) . ' < 0';
 			}
 			
 			// Review date after
 			if(!empty($params['ReviewDateAfter'])) {
 				list($day, $month, $year) = explode('/', $params['ReviewDateAfter']);
-				$reviewDate = "$year-$month-$day";
-				$wheres[] = 'NextReviewDate >= \'' . Convert::raw2sql($reviewDate) . '\'';
+				$reviewDate = "$year-$month-$day 00:00:00";
+				$wheres[] = $db->datetimeDifferenceClause('NextReviewDate', Convert::raw2sql($reviewDate)) . ' >= 0';
 			}
 		}
 		
