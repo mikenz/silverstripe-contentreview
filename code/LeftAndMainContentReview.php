@@ -36,17 +36,17 @@ class LeftAndMainContentReview extends LeftAndMainDecorator {
 		}
 		$canEdit = Permission::check("EDIT_CONTENT_REVIEW_FIELDS");
 		if (!$this->owner->currentPageID()) {
-			print "updateEditForm(): No current page -- skipping...\n";
+			//print "updateEditForm(): No current page -- skipping...\n";
 			return;
 		}
 		if (!$canEdit) {
-			print "updateEditForm(): No contentreview perms -- skipping...\n";
+			//print "updateEditForm(): No contentreview perms -- skipping...\n";
 			return;
 		}
 
 		$record = $this->owner->currentPage();
 		if(!$record->canEdit() || $record->IsDeletedFromStage) {
-			print "updateEditForm(): Can't edit, or is deleted -- skipping...\n";
+			//print "updateEditForm(): Can't edit, or is deleted -- skipping...\n";
 			return;
 		}
 
