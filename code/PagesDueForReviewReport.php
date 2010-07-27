@@ -141,6 +141,11 @@ class PagesDueForReviewReport extends SS_Report {
 		
 		// Turn a query into records
 		if($sort) {
+			$fieldsNotSortedBySql = array(
+				'OwnerNames',
+				'LastEditedByName',
+			);
+			
 			$parts = explode(' ', $sort);
 			$field = $parts[0];
 			$direction = $parts[1];
@@ -151,13 +156,13 @@ class PagesDueForReviewReport extends SS_Report {
 				$query->from[] = 'LEFT JOIN "Subsite" ON "Subsite"."ID" = "SiteTree"."SubsiteID"';
 			}
 			
-			if($field != "LastEditedByName") {
+			if(!in_array($field, $fieldsNotSortedBySql)) {
 				$query->orderby = $sort;
 			}
 		}
 
 		$records = singleton('SiteTree')->buildDataObjectSet($query->execute(), 'DataObjectSet', $query);
-//		 var_dump($records);
+
 		if($records) {
 			foreach($records as $record) {
 				$record->LastEditedByName = $record->LastEditedBy() ? $record->LastEditedBy()->getName() : null;
@@ -169,7 +174,7 @@ class PagesDueForReviewReport extends SS_Report {
 				$record->OwnerNames = $ownerstr;
 			}
 		
-			if($sort && $field != "LastEditedByName") $records->sort($sort);
+			if($sort) $records->sort($sort);
 		
 			// Apply limit after that filtering.
 			if($limit) return $records->getRange($limit['start'], $limit['limit']);
